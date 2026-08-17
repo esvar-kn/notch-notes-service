@@ -1,0 +1,63 @@
+/* Reusable NoteCard Component Styles */
+.note-card {
+  background: var(--card-bg, rgba(30, 41, 59, 0.7));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1rem;
+  backdrop-filter: blur(12px);
+  transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.note-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--primary, #6366f1);
+}
+
+.note-card-header h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-main, #f8fafc);
+  margin-bottom: 0.5rem;
+}
+
+.note-card-excerpt {
+  color: var(--text-muted, #94a3b8);
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.note-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.8rem;
+  color: var(--text-muted, #94a3b8);
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 0.75rem;
+}
+
+.note-card-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.btn-card-action {
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #94a3b8);
+  cursor: pointer;
+  font-size: 0.85rem;
+  font-weight: 500;
+}
+
+.btn-card-action:hover {
+  color: var(--text-main, #f8fafc);
+}
+
+.btn-card-delete:hover {
+  color: #ef4444;
+}

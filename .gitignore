@@ -1,0 +1,12 @@
+node_modules
+**/node_modules
+.env
+.env.local
+.env.docker
+.env.test
+**/.env
+logs/
+**/logs
+dump.rdb
+.DS_Store
+**/.DS_Store

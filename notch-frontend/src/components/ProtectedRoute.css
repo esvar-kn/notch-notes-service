@@ -1,0 +1,8 @@
+/* ProtectedRoute External Component Styles */
+.auth-loading-fullpage {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  min-height: 100vh;
+  width: 100%;
+}

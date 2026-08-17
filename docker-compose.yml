@@ -1,0 +1,108 @@
+services:
+  # Relational Database Service (PostgreSQL)
+  postgres:
+    image: postgres:16-alpine
+    container_name: notch-db
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-devpass}
+      POSTGRES_DB: ${POSTGRES_DB:-notesdb}
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d notesdb"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # In-memory Cache Service (Redis)
+  redis:
+    image: redis:7-alpine
+    container_name: notch-cache
+    ports:
+      - "6379:6379"
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  # Auth Microservice (Port 4001)
+  auth-service:
+    build:
+      context: ./auth-service
+      dockerfile: Dockerfile
+    container_name: notch-auth-service
+    ports:
+      - "4001:4001"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      PORT: 4001
+      DATABASE_URL: "postgresql://postgres:devpass@postgres:5432/notesdb"
+      JWT_SECRET: "NotesAppHashSecret"
+      SALT_ROUNDS: 12
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4001/health"]
+      interval: 15s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+
+  # Notes Microservice (Port 4002)
+  notes-service:
+    build:
+      context: ./notes-service
+      dockerfile: Dockerfile
+    container_name: notch-notes-service
+    ports:
+      - "4002:4002"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    environment:
+      PORT: 4002
+      DATABASE_URL: "postgresql://postgres:devpass@postgres:5432/notesdb"
+      REDIS_URL: "redis://redis:6379"
+      JWT_SECRET: "NotesAppHashSecret"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4002/health"]
+      interval: 15s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+
+  # API Gateway (Port 4000)
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: notch-gateway
+    ports:
+      - "4000:4000"
+    depends_on:
+      auth-service:
+        condition: service_healthy
+      notes-service:
+        condition: service_healthy
+    environment:
+      PORT: 4000
+      AUTH_SERVICE_URL: "http://auth-service:4001"
+      NOTES_SERVICE_URL: "http://notes-service:4002"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4000/health"]
+      interval: 15s
+      timeout: 3s
+      start_period: 10s
+      retries: 3
+
+volumes:
+  pgdata:
+  redisdata:

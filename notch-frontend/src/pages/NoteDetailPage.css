@@ -1,0 +1,167 @@
+/* NoteDetailPage Component Styles */
+.note-detail-page {
+  width: 100%;
+  max-width: 720px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.note-detail-card {
+  background: var(--card-bg, rgba(30, 41, 59, 0.7));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 1rem;
+  padding: 2rem;
+  backdrop-filter: blur(16px);
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.btn-back-nav {
+  align-self: flex-start;
+  background: transparent;
+  border: none;
+  color: var(--primary, #6366f1);
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  transition: color 0.2s ease;
+}
+
+.btn-back-nav:hover {
+  color: var(--primary-hover, #4f46e5);
+}
+
+.note-detail-header h1 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: var(--text-main, #f8fafc);
+  margin-bottom: 0.5rem;
+}
+
+.note-detail-meta {
+  font-size: 0.85rem;
+  color: var(--text-muted, #94a3b8);
+  display: flex;
+  gap: 1rem;
+}
+
+.note-detail-body {
+  font-size: 1rem;
+  line-height: 1.7;
+  color: var(--text-main, #f8fafc);
+  white-space: pre-wrap;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 1.5rem 0;
+}
+
+.note-detail-actions {
+  display: flex;
+  gap: 1rem;
+  justify-content: flex-end;
+}
+
+.btn-detail-edit,
+.btn-detail-save {
+  padding: 0.6rem 1.25rem;
+  background: var(--primary, #6366f1);
+  color: #ffffff;
+  border: none;
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-detail-edit:hover,
+.btn-detail-save:hover {
+  background: var(--primary-hover, #4f46e5);
+}
+
+.btn-detail-delete {
+  padding: 0.6rem 1.25rem;
+  background: rgba(239, 68, 68, 0.2);
+  color: #fca5a5;
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s ease;
+}
+
+.btn-detail-delete:hover {
+  background: rgba(239, 68, 68, 0.3);
+}
+
+.btn-detail-cancel {
+  padding: 0.6rem 1.25rem;
+  background: transparent;
+  color: var(--text-muted, #94a3b8);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 0.5rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.btn-detail-cancel:hover {
+  color: var(--text-main, #f8fafc);
+}
+
+.note-edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.note-edit-group {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.note-edit-group label {
+  font-size: 0.825rem;
+  font-weight: 600;
+  color: var(--text-muted, #94a3b8);
+  text-transform: uppercase;
+}
+
+.note-edit-input,
+.note-edit-textarea {
+  width: 100%;
+  padding: 0.75rem 1rem;
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 0.6rem;
+  color: var(--text-main, #f8fafc);
+  font-size: 0.95rem;
+  outline: none;
+  font-family: inherit;
+}
+
+.note-edit-textarea {
+  min-height: 160px;
+  resize: vertical;
+}
+
+.note-detail-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem;
+  color: var(--text-muted, #94a3b8);
+}
+
+.note-detail-error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+  padding: 0.75rem 1rem;
+  border-radius: 0.5rem;
+  font-size: 0.9rem;
+}

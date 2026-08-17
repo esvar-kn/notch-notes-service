@@ -1,0 +1,128 @@
+/* Skeleton Loader CSS Animations */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 0.25;
+  }
+}
+
+.skeleton {
+  background: var(--border-color, rgba(255, 255, 255, 0.15));
+  border-radius: 0.375rem;
+  animation: pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-card {
+  background: var(--card-bg, rgba(30, 41, 59, 0.7));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 0.75rem;
+  padding: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  gap: 1.25rem;
+  min-height: 140px;
+}
+
+.skeleton-title {
+  height: 1.25rem;
+  width: 70%;
+  margin-bottom: 0.75rem;
+}
+
+.skeleton-line {
+  height: 0.875rem;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+.skeleton-line.short {
+  width: 45%;
+}
+
+.skeleton-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(255, 255, 255, 0.05);
+  padding-top: 0.75rem;
+}
+
+.skeleton-date {
+  height: 0.75rem;
+  width: 60px;
+}
+
+.skeleton-button {
+  height: 1rem;
+  width: 80px;
+}
+
+/* Detail View Skeleton */
+.skeleton-detail-card {
+  background: var(--card-bg, rgba(30, 41, 59, 0.7));
+  border: 1px solid var(--border-color, rgba(255, 255, 255, 0.1));
+  border-radius: 1rem;
+  padding: 2rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+  width: 100%;
+}
+
+.skeleton-detail-title {
+  height: 2rem;
+  width: 60%;
+}
+
+.skeleton-detail-meta {
+  height: 1rem;
+  width: 35%;
+}
+
+.skeleton-detail-paragraph {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 1rem 0;
+}
+
+/* Centered Spinner */
+.spinner-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 3rem 1rem;
+  width: 100%;
+}
+
+.spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(99, 102, 241, 0.2);
+  border-top-color: var(--primary, #6366f1);
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Inline button spinner (shows inside auth submit buttons) */
+.btn-spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255, 255, 255, 0.3);
+  border-top-color: #ffffff;
+  border-radius: 50%;
+  animation: spin 0.6s linear infinite;
+  vertical-align: middle;
+  margin-right: 0.5rem;
+}
+
