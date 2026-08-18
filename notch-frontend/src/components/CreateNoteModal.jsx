@@ -1,58 +1,63 @@
 import { useState } from 'react';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { notesService } from '../services/notesService';
 
 /**
- * CreateNoteModal — Presentational + form-scoped state component.
- * Owns its own form data and submission state.
- * Communicates results upward via onCreated / onClose callbacks.
+ * CreateNoteModal Component using TanStack React Query `useMutation`.
+ * On successful creation, invalidates the ['notes'] query key so that
+ * NotesListPage automatically refetches server state without prop-drilled refetch calls.
  */
-export const CreateNoteModal = ({ onCreated, onClose, createNote }) => {
+export const CreateNoteModal = ({ onClose }) => {
   const [formData, setFormData] = useState({ title: '', content: '' });
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState(null);
+  const [validationError, setValidationError] = useState(null);
 
-  const handleSubmit = async (e) => {
+  const queryClient = useQueryClient();
+
+  const createNoteMutation = useMutation({
+    mutationFn: (newNoteData) => notesService.createNote(newNoteData),
+    onSuccess: () => {
+      // Invalidate server state query key ['notes'] so all notes queries auto-refetch
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+      if (onClose) onClose();
+    },
+  });
+
+  const handleSubmit = (e) => {
     e.preventDefault();
     const title = formData.title.trim();
     const content = formData.content.trim();
 
     if (!title || !content) {
-      setError('Both title and content are required.');
+      setValidationError('Both title and content are required.');
       return;
     }
 
     if (title.length < 3) {
-      setError('Title must be at least 3 characters long.');
+      setValidationError('Title must be at least 3 characters long.');
       return;
     }
 
     if (title.length > 200) {
-      setError('Title cannot exceed 200 characters.');
+      setValidationError('Title cannot exceed 200 characters.');
       return;
     }
 
     if (content.length > 10000) {
-      setError('Content cannot exceed 10,000 characters.');
+      setValidationError('Content cannot exceed 10,000 characters.');
       return;
     }
 
-    try {
-      setIsSubmitting(true);
-      setError(null);
-      const res = await createNote(formData);
-      const createdNote = res.data || res.note || res;
-      onCreated(createdNote);
-    } catch (err) {
-      setError(err.message || 'Failed to create note.');
-    } finally {
-      setIsSubmitting(false);
-    }
+    setValidationError(null);
+    createNoteMutation.mutate({ title, content });
   };
 
   const handleCancel = () => {
     setFormData({ title: '', content: '' });
-    setError(null);
-    onClose();
+    setValidationError(null);
+    if (onClose) onClose();
   };
+
+  const errorMsg = validationError || (createNoteMutation.error?.message ?? null);
 
   return (
     <div className="modal-backdrop">
@@ -61,7 +66,7 @@ export const CreateNoteModal = ({ onCreated, onClose, createNote }) => {
           <h3>Create New Note</h3>
         </div>
 
-        {error && <div className="note-detail-error">{error}</div>}
+        {errorMsg && <div className="note-detail-error">{errorMsg}</div>}
 
         <form onSubmit={handleSubmit} className="note-edit-form">
           <div className="note-edit-group">
@@ -96,16 +101,16 @@ export const CreateNoteModal = ({ onCreated, onClose, createNote }) => {
               type="button"
               className="btn-detail-cancel"
               onClick={handleCancel}
-              disabled={isSubmitting}
+              disabled={createNoteMutation.isPending}
             >
               Cancel
             </button>
             <button
               type="submit"
               className="btn-detail-save"
-              disabled={isSubmitting}
+              disabled={createNoteMutation.isPending}
             >
-              {isSubmitting ? 'Creating...' : 'Create Note'}
+              {createNoteMutation.isPending ? 'Creating...' : 'Create Note'}
             </button>
           </div>
         </form>

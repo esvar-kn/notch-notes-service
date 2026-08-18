@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSelector, useDispatch } from 'react-redux';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { setFilter, toggleStarNote, toggleArchiveNote } from '../store/uiSlice';
 import { notesService } from '../services/notesService';
 import { NoteCard } from '../components/NoteCard';
@@ -11,72 +12,53 @@ import './NotesListPage.css';
 export const NotesListPage = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const queryClient = useQueryClient();
 
-  // Redux UI State
+  // Redux Client UI State (filter, starred, archived)
   const activeFilter = useSelector((state) => state.ui.filter);
   const starredNoteIds = useSelector((state) => state.ui.starredNoteIds);
   const archivedNoteIds = useSelector((state) => state.ui.archivedNoteIds);
 
-  const [notes, setNotes] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const [searchQuery, setSearchQuery] = useState('');
-
   // Pagination State
   const [page, setPage] = useState(1);
   const [limit] = useState(6);
-  const [totalPages, setTotalPages] = useState(1);
+  const [searchQuery, setSearchQuery] = useState('');
 
   // Create Note Modal visibility
   const [isCreating, setIsCreating] = useState(false);
 
-  useEffect(() => {
-    let isMounted = true;
+  // Server State via TanStack React Query (useQuery replaces manual useEffect/useState)
+  const {
+    data: notesResponse,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ['notes', page, limit],
+    queryFn: () => notesService.getNotes({ page, limit }),
+  });
 
-    const fetchNotes = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const res = await notesService.getNotes({ page, limit });
-        if (isMounted) {
-          const notesData = res.notes || res.data || (Array.isArray(res) ? res : []);
-          setNotes(notesData);
-          const total = res.totalCount ?? res.count ?? notesData.length;
-          setTotalPages(res.totalPages || Math.ceil(total / limit) || 1);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err.message || 'Failed to fetch notes.');
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
+  // Server Mutation for Deleting Note
+  const deleteNoteMutation = useMutation({
+    mutationFn: (noteId) => notesService.deleteNote(noteId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+    },
+  });
 
-    fetchNotes();
-
-    return () => {
-      isMounted = false;
-    };
-  }, [page, limit]);
-
-  const handleNoteCreated = (createdNote) => {
-    setNotes([createdNote, ...notes]);
-    setIsCreating(false);
-  };
-
-  const handleDeleteNote = async (e, noteId) => {
+  const handleDeleteNote = (e, noteId) => {
     e.stopPropagation();
-    try {
-      setError(null);
-      await notesService.deleteNote(noteId);
-      setNotes((prevNotes) => prevNotes.filter((n) => n.id !== noteId));
-    } catch (err) {
-      setError(err.message || 'Failed to delete note.');
-    }
+    deleteNoteMutation.mutate(noteId);
   };
+
+  // Safely extract notes list and total pages from server response
+  const notes =
+    notesResponse?.notes ||
+    notesResponse?.data ||
+    (Array.isArray(notesResponse) ? notesResponse : []);
+
+  const totalCount = notesResponse?.totalCount ?? notesResponse?.count ?? notes.length;
+  const totalPages = notesResponse?.totalPages || Math.ceil(totalCount / limit) || 1;
 
   // Filter notes based on Search Query + Redux UI Filter State
   const filteredNotes = notes.filter((note) => {
@@ -91,7 +73,6 @@ export const NotesListPage = () => {
 
     if (activeFilter === 'starred') return isStarred;
     if (activeFilter === 'archived') return isArchived;
-    // 'all' filter shows non-archived notes by default
     return !isArchived;
   });
 
@@ -147,9 +128,13 @@ export const NotesListPage = () => {
         </div>
       </div>
 
-      {error && <div className="note-detail-error">{error}</div>}
+      {(isError || deleteNoteMutation.isError) && (
+        <div className="note-detail-error">
+          {error?.message || deleteNoteMutation.error?.message || 'Error communicating with notes server.'}
+        </div>
+      )}
 
-      {loading ? (
+      {isLoading ? (
         <div className="notes-grid">
           {[...Array(6)].map((_, index) => (
             <SkeletonCard key={index} />
@@ -211,11 +196,7 @@ export const NotesListPage = () => {
 
       {/* Create Note Modal */}
       {isCreating && (
-        <CreateNoteModal
-          createNote={notesService.createNote}
-          onCreated={handleNoteCreated}
-          onClose={() => setIsCreating(false)}
-        />
+        <CreateNoteModal onClose={() => setIsCreating(false)} />
       )}
     </div>
   );

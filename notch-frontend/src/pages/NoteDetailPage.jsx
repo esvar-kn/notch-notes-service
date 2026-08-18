@@ -1,5 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { notesService } from '../services/notesService';
 import { SkeletonDetail } from '../components/SkeletonCard';
 import { NoteEditForm } from '../components/NoteEditForm';
@@ -8,72 +9,51 @@ import './NoteDetailPage.css';
 export const NoteDetailPage = () => {
   const { id } = useParams();
   const navigate = useNavigate();
-
-  const [note, setNote] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+  const queryClient = useQueryClient();
   const [isEditing, setIsEditing] = useState(false);
-  const [isDeleting, setIsDeleting] = useState(false);
 
-  // Fetch single note by URL param on component mount or id change
-  useEffect(() => {
-    let isMounted = true;
+  // React Query useQuery for single note detail
+  const {
+    data: noteResponse,
+    isLoading,
+    isError,
+    error,
+  } = useQuery({
+    queryKey: ['note', id],
+    queryFn: () => notesService.getNoteById(id),
+    enabled: Boolean(id),
+  });
 
-    const fetchNote = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const res = await notesService.getNoteById(id);
-        if (isMounted) {
-          const noteData = res.note || res.data || res;
-          setNote(noteData);
-        }
-      } catch (err) {
-        if (isMounted) {
-          setError(err.message || 'Failed to fetch note details.');
-        }
-      } finally {
-        if (isMounted) {
-          setLoading(false);
-        }
-      }
-    };
+  const note = noteResponse?.note || noteResponse?.data || noteResponse;
 
-    if (id) {
-      fetchNote();
-    }
+  // React Query useMutation for Update
+  const updateNoteMutation = useMutation({
+    mutationFn: (formData) => notesService.updateNote(id, formData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['note', id] });
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
+      setIsEditing(false);
+    },
+  });
 
-    return () => {
-      isMounted = false;
-    };
-  }, [id]);
-
-  // Handle Note Update — delegate to NoteEditForm, receive result
-  const handleSave = async (formData) => {
-    const res = await notesService.updateNote(id, formData);
-    const updatedNoteData = res.updatedNote || res.data || formData;
-    setNote((prevNote) => ({
-      ...prevNote,
-      ...updatedNoteData,
-    }));
-    setIsEditing(false);
-    setError(null);
-  };
-
-  // Handle Note Deletion (DELETE /api/v1/notes/:id)
-  const handleDelete = async () => {
-    try {
-      setIsDeleting(true);
-      setError(null);
-      await notesService.deleteNote(id);
+  // React Query useMutation for Delete
+  const deleteNoteMutation = useMutation({
+    mutationFn: () => notesService.deleteNote(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['notes'] });
       navigate('/notes');
-    } catch (err) {
-      setError(err.message || 'Failed to delete note.');
-      setIsDeleting(false);
-    }
+    },
+  });
+
+  const handleSave = async (formData) => {
+    updateNoteMutation.mutate(formData);
   };
 
-  if (loading) {
+  const handleDelete = () => {
+    deleteNoteMutation.mutate();
+  };
+
+  if (isLoading) {
     return (
       <div className="note-detail-page">
         <button type="button" onClick={() => navigate('/notes')} className="btn-back-nav">
@@ -84,14 +64,14 @@ export const NoteDetailPage = () => {
     );
   }
 
-  if (error && !note) {
+  if (isError && !note) {
     return (
       <div className="note-detail-page">
         <button type="button" onClick={() => navigate(-1)} className="btn-back-nav">
           ← Back
         </button>
         <div className="note-detail-card">
-          <div className="note-detail-error">{error}</div>
+          <div className="note-detail-error">{error?.message || 'Failed to fetch note details.'}</div>
         </div>
       </div>
     );
@@ -104,7 +84,11 @@ export const NoteDetailPage = () => {
       </button>
 
       <div className="note-detail-card">
-        {error && <div className="note-detail-error">{error}</div>}
+        {(updateNoteMutation.isError || deleteNoteMutation.isError) && (
+          <div className="note-detail-error">
+            {updateNoteMutation.error?.message || deleteNoteMutation.error?.message || 'Operation failed.'}
+          </div>
+        )}
 
         {isEditing ? (
           <NoteEditForm
@@ -145,9 +129,9 @@ export const NoteDetailPage = () => {
                 type="button"
                 className="btn-detail-delete"
                 onClick={handleDelete}
-                disabled={isDeleting}
+                disabled={deleteNoteMutation.isPending}
               >
-                {isDeleting ? 'Deleting...' : 'Delete Note'}
+                {deleteNoteMutation.isPending ? 'Deleting...' : 'Delete Note'}
               </button>
             </footer>
           </>
