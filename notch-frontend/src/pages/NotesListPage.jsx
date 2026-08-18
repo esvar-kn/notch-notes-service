@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { setFilter, toggleStarNote, toggleArchiveNote } from '../store/uiSlice';
 import { notesService } from '../services/notesService';
 import { NoteCard } from '../components/NoteCard';
 import { SkeletonCard } from '../components/SkeletonCard';
@@ -8,6 +10,13 @@ import './NotesListPage.css';
 
 export const NotesListPage = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+
+  // Redux UI State
+  const activeFilter = useSelector((state) => state.ui.filter);
+  const starredNoteIds = useSelector((state) => state.ui.starredNoteIds);
+  const archivedNoteIds = useSelector((state) => state.ui.archivedNoteIds);
+
   const [notes, setNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -69,11 +78,22 @@ export const NotesListPage = () => {
     }
   };
 
-  const filteredNotes = notes.filter(
-    (note) =>
+  // Filter notes based on Search Query + Redux UI Filter State
+  const filteredNotes = notes.filter((note) => {
+    const matchesSearch =
       note.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      note.content?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+      note.content?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    const isStarred = starredNoteIds.includes(note.id);
+    const isArchived = archivedNoteIds.includes(note.id);
+
+    if (activeFilter === 'starred') return isStarred;
+    if (activeFilter === 'archived') return isArchived;
+    // 'all' filter shows non-archived notes by default
+    return !isArchived;
+  });
 
   return (
     <div className="notes-list-page">
@@ -100,6 +120,31 @@ export const NotesListPage = () => {
             onChange={(e) => setSearchQuery(e.target.value)}
           />
         </div>
+
+        {/* Redux UI Filter Tabs */}
+        <div className="filter-tabs">
+          <button
+            type="button"
+            className={`btn-filter-tab ${activeFilter === 'all' ? 'active' : ''}`}
+            onClick={() => dispatch(setFilter('all'))}
+          >
+            All Notes
+          </button>
+          <button
+            type="button"
+            className={`btn-filter-tab ${activeFilter === 'starred' ? 'active' : ''}`}
+            onClick={() => dispatch(setFilter('starred'))}
+          >
+            ★ Starred ({starredNoteIds.length})
+          </button>
+          <button
+            type="button"
+            className={`btn-filter-tab ${activeFilter === 'archived' ? 'active' : ''}`}
+            onClick={() => dispatch(setFilter('archived'))}
+          >
+            📁 Archived ({archivedNoteIds.length})
+          </button>
+        </div>
       </div>
 
       {error && <div className="note-detail-error">{error}</div>}
@@ -113,7 +158,13 @@ export const NotesListPage = () => {
       ) : filteredNotes.length === 0 ? (
         <div className="note-card notes-empty-card">
           <p className="notes-muted-text">
-            {searchQuery ? 'No notes matching your search.' : 'No notes found. Click "+ New Note" to create your first note!'}
+            {searchQuery
+              ? 'No notes matching your search.'
+              : activeFilter === 'starred'
+              ? 'No starred notes yet. Click the star icon on any note to star it!'
+              : activeFilter === 'archived'
+              ? 'No archived notes.'
+              : 'No notes found. Click "+ New Note" to create your first note!'}
           </p>
         </div>
       ) : (
@@ -123,6 +174,10 @@ export const NotesListPage = () => {
               <NoteCard
                 key={note.id}
                 note={note}
+                isStarred={starredNoteIds.includes(note.id)}
+                isArchived={archivedNoteIds.includes(note.id)}
+                onToggleStar={(id) => dispatch(toggleStarNote(id))}
+                onToggleArchive={(id) => dispatch(toggleArchiveNote(id))}
                 onView={() => navigate(`/notes/${note.id}`)}
                 onDelete={(e) => handleDeleteNote(e, note.id)}
               />
@@ -154,7 +209,7 @@ export const NotesListPage = () => {
         </>
       )}
 
-      {/* Create Note Modal — self-contained component */}
+      {/* Create Note Modal */}
       {isCreating && (
         <CreateNoteModal
           createNote={notesService.createNote}
