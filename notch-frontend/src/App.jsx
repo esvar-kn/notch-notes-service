@@ -5,6 +5,7 @@ import { NotesListPage } from './pages/NotesListPage';
 import { NoteDetailPage } from './pages/NoteDetailPage';
 import { ProtectedRoute } from './components/ProtectedRoute';
 import { useAuth } from './context/AuthContext';
+import './services/socket';
 
 function App() {
   const { isAuthenticated, token } = useAuth();
@@ -41,6 +42,5 @@ function App() {
     </Routes>
   );
 }
-
 
 export default App;

@@ -1,5 +1,7 @@
 const config = require('./utils/config');
 const express = require('express');
+const http = require('http');
+const { Server } = require('socket.io');
 const compression = require('compression');
 const z = require('zod');
 const validator = require('validator');
@@ -354,12 +356,48 @@ app.use((err, req, res, _next) => {
     });
 });
 
+// --- HTTP SERVER & SOCKET.IO SETUP ---
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: '*',
+        methods: ['GET', 'POST']
+    }
+});
+
+// Socket.io Connection & Room Handling (join-note / leave-note pattern)
+io.on('connection', (socket) => {
+    logger.info(`🔌 Socket client connected: ${socket.id}`);
+    console.log(`🔌 [Notes Service Socket] Client connected: ${socket.id}`);
+
+    socket.on('join-note', (noteId) => {
+        const roomName = `note:${noteId}`;
+        socket.join(roomName);
+        logger.info(`👥 Socket ${socket.id} joined room ${roomName}`);
+        console.log(`👥 [Notes Service Socket] Socket ${socket.id} joined room ${roomName}`);
+    });
+
+    socket.on('leave-note', (noteId) => {
+        const roomName = `note:${noteId}`;
+        socket.leave(roomName);
+        logger.info(`👋 Socket ${socket.id} left room ${roomName}`);
+        console.log(`👋 [Notes Service Socket] Socket ${socket.id} left room ${roomName}`);
+    });
+
+    socket.on('disconnect', () => {
+        logger.info(`❌ Socket client disconnected: ${socket.id}`);
+        console.log(`❌ [Notes Service Socket] Client disconnected: ${socket.id}`);
+    });
+});
+
+app.io = io;
+
 if (!config.isTest) {
     const port = process.env.NOTES_PORT || config.PORT || 4002;
-    const server = app.listen(port, '0.0.0.0', () => {
-        logger.info(`Notes Service running on port ${port}`);
+    server.listen(port, '0.0.0.0', () => {
+        logger.info(`Notes Service & Socket.io running on port ${port}`);
     });
     module.exports = server;
 } else {
-    module.exports = app;
+    module.exports = server;
 }
