@@ -1,43 +1,20 @@
 {
-  "name": "notch-api",
+  "name": "notch-notes-service",
   "version": "1.0.0",
-  "description": "Notch — production-ready notes API (Express 5, PostgreSQL/Prisma, Redis, JWT, Zod, Winston)",
+  "description": "Notch — Monorepo Microservices Architecture (API Gateway, Auth Service, Notes Service, Socket.io Real-time Editing & React 19 Frontend)",
   "license": "ISC",
   "author": "Esvar K N",
-  "type": "commonjs",
-  "main": "index.js",
+  "private": true,
   "engines": {
     "node": ">=20"
   },
   "scripts": {
-    "dev": "nodemon index.js",
-    "start": "NODE_ENV=production node index.js",
-    "postinstall": "prisma generate",
-    "lint": "oxlint",
-    "test": "NODE_ENV=test node --test tests/*.test.js"
-  },
-  "dependencies": {
-    "@prisma/adapter-pg": "^6.19.3",
-    "@prisma/client": "^6.19.3",
-    "bcrypt": "^6.0.0",
-    "compression": "^1.8.1",
-    "cors": "^2.8.6",
-    "dotenv": "^17.4.2",
-    "express": "^5.2.1",
-    "express-rate-limit": "^8.5.2",
-    "helmet": "^8.3.0",
-    "ioredis": "^5.11.1",
-    "jsonwebtoken": "^9.0.3",
-    "pg": "^8.22.0",
-    "rate-limit-redis": "^6.0.1",
-    "validator": "^13.15.35",
-    "winston": "^3.19.0",
-    "zod": "^4.4.3"
+    "test": "npm test --prefix auth-service && npm test --prefix notes-service && npm test --prefix notch-frontend",
+    "test:coverage": "npm run test:coverage --prefix auth-service && npm run test:coverage --prefix notes-service",
+    "start": "docker compose up --build",
+    "lint": "oxlint"
   },
   "devDependencies": {
-    "nodemon": "^3.1.14",
-    "oxlint": "^1.71.0",
-    "prisma": "^6.19.3",
-    "supertest": "^7.0.0"
+    "oxlint": "^1.71.0"
   }
 }
