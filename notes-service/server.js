@@ -365,28 +365,60 @@ const io = new Server(server, {
     }
 });
 
-// Socket.io Connection & Room Handling (join-note / leave-note pattern)
+// Socket.io Connection, Room Handling, and Persist & Broadcast Block
 io.on('connection', (socket) => {
     logger.info(`🔌 Socket client connected: ${socket.id}`);
-    console.log(`🔌 [Notes Service Socket] Client connected: ${socket.id}`);
 
+    // Join room
     socket.on('join-note', (noteId) => {
         const roomName = `note:${noteId}`;
         socket.join(roomName);
         logger.info(`👥 Socket ${socket.id} joined room ${roomName}`);
-        console.log(`👥 [Notes Service Socket] Socket ${socket.id} joined room ${roomName}`);
     });
 
+    // Leave room
     socket.on('leave-note', (noteId) => {
         const roomName = `note:${noteId}`;
         socket.leave(roomName);
         logger.info(`👋 Socket ${socket.id} left room ${roomName}`);
-        console.log(`👋 [Notes Service Socket] Socket ${socket.id} left room ${roomName}`);
+    });
+
+    // Block 2: Receive, Persist, Broadcast (Last-Write-Wins)
+    socket.on('note:update', async ({ noteId, title, content, editedBy }) => {
+        try {
+            const id = Number(noteId);
+            if (isNaN(id)) return;
+
+            const updateData = {};
+            if (title !== undefined) updateData.title = title;
+            if (content !== undefined) updateData.content = content;
+
+            // Persist to PostgreSQL via Prisma
+            const updatedNote = await prisma.note.update({
+                where: { id },
+                data: updateData
+            });
+
+            // Invalidate Redis cache for this note
+            await safeRedisDel(`note:${id}`);
+
+            // Broadcast to everyone in the room EXCEPT the sender
+            socket.to(`note:${noteId}`).emit('note:updated', {
+                noteId,
+                title: updatedNote.title,
+                content: updatedNote.content,
+                editedBy,
+                updatedAt: updatedNote.updatedAt
+            });
+
+            logger.info(`📝 Note ${id} updated via socket by ${editedBy?.name || socket.id} and broadcasted`);
+        } catch (err) {
+            logger.error(`Error handling note:update via socket: ${err.message}`);
+        }
     });
 
     socket.on('disconnect', () => {
         logger.info(`❌ Socket client disconnected: ${socket.id}`);
-        console.log(`❌ [Notes Service Socket] Client disconnected: ${socket.id}`);
     });
 });
 

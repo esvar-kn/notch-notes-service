@@ -1,17 +1,17 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 
 /**
  * NoteEditForm — Presentational form component for editing a note.
- * Owns its own form data and validation state.
- * Communicates save/cancel actions upward via callbacks.
+ * Includes debounced keystroke emission for real-time collaborative editing (Block 3).
  *
  * Props:
  *   initialData  — { title, content } to seed the form
  *   onSave       — async (formData) => Promise — called on valid submit
  *   onCancel     — () => void — called when user cancels editing
- *   error        — optional external error string to display
+ *   onEmitUpdate — (formData) => void — called on debounced keystroke for live Socket.io sync
+ *   onFocusChange — (isFocused: boolean) => void — tracks focus guard
  */
-export const NoteEditForm = ({ initialData, onSave, onCancel }) => {
+export const NoteEditForm = ({ initialData, onSave, onCancel, onEmitUpdate, onFocusChange }) => {
   const [formData, setFormData] = useState({
     title: initialData?.title || '',
     content: initialData?.content || '',
@@ -19,9 +19,39 @@ export const NoteEditForm = ({ initialData, onSave, onCancel }) => {
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState(null);
 
+  const debounceTimerRef = useRef(null);
+
+  // Synchronize form if initialData updates remotely while not actively focused
+  useEffect(() => {
+    if (initialData) {
+      setFormData((prev) => ({
+        title: initialData.title ?? prev.title,
+        content: initialData.content ?? prev.content,
+      }));
+    }
+  }, [initialData?.title, initialData?.content]);
+
   const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+    const updated = { ...formData, [name]: value };
+    setFormData(updated);
     if (error) setError(null);
+
+    // Debounced emit on keystroke (300ms debounce to avoid spamming on every keypress)
+    if (onEmitUpdate) {
+      if (debounceTimerRef.current) clearTimeout(debounceTimerRef.current);
+      debounceTimerRef.current = setTimeout(() => {
+        onEmitUpdate(updated);
+      }, 300);
+    }
+  };
+
+  const handleFocus = () => {
+    if (onFocusChange) onFocusChange(true);
+  };
+
+  const handleBlur = () => {
+    if (onFocusChange) onFocusChange(false);
   };
 
   const handleSubmit = async (e) => {
@@ -72,6 +102,8 @@ export const NoteEditForm = ({ initialData, onSave, onCancel }) => {
           name="title"
           value={formData.title}
           onChange={handleChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           className="note-edit-input"
           required
         />
@@ -84,6 +116,8 @@ export const NoteEditForm = ({ initialData, onSave, onCancel }) => {
           name="content"
           value={formData.content}
           onChange={handleChange}
+          onFocus={handleFocus}
+          onBlur={handleBlur}
           className="note-edit-textarea"
           required
         />
