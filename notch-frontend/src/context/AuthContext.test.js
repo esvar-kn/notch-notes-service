@@ -1,6 +1,6 @@
+import { describe, it, expect } from 'vitest';
 import { authReducer, AUTH_ACTIONS, getInitialAuthState } from './authReducer.js';
 
-// Helper mock for localStorage
 const createMockLocalStorage = () => {
   let store = {};
   return {
@@ -18,83 +18,45 @@ const createMockLocalStorage = () => {
   };
 };
 
-export function runAuthPersistenceTests() {
-  const results = [];
-  const mockStorage = createMockLocalStorage();
-
-  // 1. Initial State without token
-  let state = getInitialAuthState(mockStorage);
-
-  results.push({
-    test: '1. Initial State - Unauthenticated when localStorage is empty',
-    passed: state.token === null && state.isAuthenticated === false && state.user === null,
+describe('AuthContext & Reducer Tests', () => {
+  it('initializes as unauthenticated when localStorage is empty', () => {
+    const mockStorage = createMockLocalStorage();
+    const state = getInitialAuthState(mockStorage);
+    expect(state.token).toBeNull();
+    expect(state.isAuthenticated).toBe(false);
+    expect(state.user).toBeNull();
   });
 
-  // 2. Simulate Signup & Login Action
-  const sampleToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test-jwt-token-payload';
-  const sampleUser = { name: 'Jane Doe', email: 'jane@example.com' };
+  it('updates state and persists token/user on LOGIN_SUCCESS', () => {
+    const mockStorage = createMockLocalStorage();
+    let state = getInitialAuthState(mockStorage);
+    const sampleToken = 'test-jwt-token';
+    const sampleUser = { name: 'Jane Doe', email: 'jane@example.com' };
 
-  const loginAction = {
-    type: AUTH_ACTIONS.LOGIN_SUCCESS,
-    payload: { token: sampleToken, user: sampleUser },
-  };
+    state = authReducer(state, { type: AUTH_ACTIONS.LOGIN_SUCCESS, payload: { token: sampleToken, user: sampleUser } }, mockStorage);
 
-  state = authReducer(state, loginAction, mockStorage);
-
-  const tokenStoredInLocalStorage = mockStorage.getItem('token') === sampleToken;
-  const userStoredInLocalStorage = mockStorage.getItem('user') === JSON.stringify(sampleUser);
-
-  results.push({
-    test: '2. Dispatch LOGIN_SUCCESS - Updates state & persists token/user in localStorage',
-    passed:
-      state.isAuthenticated === true &&
-      state.token === sampleToken &&
-      state.user.email === 'jane@example.com' &&
-      tokenStoredInLocalStorage &&
-      userStoredInLocalStorage,
+    expect(state.isAuthenticated).toBe(true);
+    expect(state.token).toBe(sampleToken);
+    expect(mockStorage.getItem('token')).toBe(sampleToken);
   });
 
-  // 3. Simulate Page Refresh (Re-initialization from localStorage)
-  const refreshedState = getInitialAuthState(mockStorage);
+  it('hydrates state from localStorage on page refresh', () => {
+    const mockStorage = createMockLocalStorage();
+    mockStorage.setItem('token', 'stored-token');
+    mockStorage.setItem('user', JSON.stringify({ name: 'Jane Doe' }));
 
-  results.push({
-    test: '3. Page Refresh - Hydrates state from localStorage (token persists)',
-    passed:
-      refreshedState.isAuthenticated === true &&
-      refreshedState.token === sampleToken &&
-      refreshedState.user?.name === 'Jane Doe' &&
-      refreshedState.user?.email === 'jane@example.com',
+    const state = getInitialAuthState(mockStorage);
+    expect(state.isAuthenticated).toBe(true);
+    expect(state.token).toBe('stored-token');
   });
 
-  // 4. Logout Action
-  const logoutAction = { type: AUTH_ACTIONS.LOGOUT };
-  const loggedOutState = authReducer(refreshedState, logoutAction, mockStorage);
+  it('clears state and localStorage on LOGOUT', () => {
+    const mockStorage = createMockLocalStorage();
+    mockStorage.setItem('token', 'stored-token');
+    const state = getInitialAuthState(mockStorage);
 
-  results.push({
-    test: '4. Dispatch LOGOUT - Clears state & removes token from localStorage',
-    passed:
-      loggedOutState.isAuthenticated === false &&
-      loggedOutState.token === null &&
-      mockStorage.getItem('token') === null &&
-      mockStorage.getItem('user') === null,
+    const loggedOut = authReducer(state, { type: AUTH_ACTIONS.LOGOUT }, mockStorage);
+    expect(loggedOut.isAuthenticated).toBe(false);
+    expect(mockStorage.getItem('token')).toBeNull();
   });
-
-  return results;
-}
-
-const testResults = runAuthPersistenceTests();
-console.log('\n======================================================');
-console.log('  TEST SUITE: SIGNUP → LOGIN → REFRESH TOKEN PERSISTENCE');
-console.log('======================================================');
-let allPassed = true;
-testResults.forEach((r) => {
-  console.log(`[${r.passed ? 'PASS' : 'FAIL'}] ${r.test}`);
-  if (!r.passed) allPassed = false;
 });
-console.log('======================================================');
-if (allPassed) {
-  console.log('RESULT: ALL TESTS PASSED SUCCESSFULLY! Token persistence verified.\n');
-} else {
-  console.log('RESULT: SOME TESTS FAILED.\n');
-  process.exit(1);
-}
