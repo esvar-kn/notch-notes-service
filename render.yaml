@@ -19,13 +19,11 @@ services:
           type: web
           name: notch-auth-service
           property: hostport
-          type: http
       - key: NOTES_SERVICE_URL
         fromService:
           type: web
           name: notch-notes-service
           property: hostport
-          type: http
 
   # ----------------------------------------------------
   # 🔐 2. Auth Microservice (Port 4001)
@@ -76,9 +74,16 @@ services:
           envVarKey: JWT_SECRET
 
   # ----------------------------------------------------
-  # 📱 4. React 19 Frontend Application
+  # ⚡ 4. Managed Redis Cache Store
   # ----------------------------------------------------
-  - type: static
+  - type: redis
+    name: notch-redis
+    ipAllowList: []
+
+  # ----------------------------------------------------
+  # 📱 5. React 19 Frontend Application
+  # ----------------------------------------------------
+  - type: static_site
     name: notch-frontend
     buildCommand: cd notch-frontend && npm install && npm run build
     staticPublishPath: ./notch-frontend/dist
@@ -94,15 +99,9 @@ services:
           property: url
 
 # ----------------------------------------------------
-# 🐘 5. Managed PostgreSQL Database
+# 🐘 6. Managed PostgreSQL Database
 # ----------------------------------------------------
 databases:
   - name: notch-postgres
     databaseName: notesdb
     user: postgres
-    plan: free
-
-# ----------------------------------------------------
-# ⚡ 6. Managed Redis Cache Store
-# ----------------------------------------------------
-# Note: Render Key-Value (Redis) setup
