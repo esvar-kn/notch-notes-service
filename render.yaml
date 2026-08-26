@@ -81,10 +81,11 @@ services:
     ipAllowList: []
 
   # ----------------------------------------------------
-  # 📱 5. React 19 Frontend Application
+  # 📱 5. React 19 Frontend Application (Static Site)
   # ----------------------------------------------------
-  - type: static_site
+  - type: web
     name: notch-frontend
+    env: static
     buildCommand: cd notch-frontend && npm install && npm run build
     staticPublishPath: ./notch-frontend/dist
     routes:
