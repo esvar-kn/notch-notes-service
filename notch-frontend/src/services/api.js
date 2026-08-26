@@ -1,7 +1,14 @@
 import axios from 'axios';
 
-const rawEnvUrl = typeof import.meta !== 'undefined' && import.meta.env ? import.meta.env.VITE_API_URL : '';
-const API_BASE_URL = rawEnvUrl ? rawEnvUrl.trim().replace(/\/+$/, '') : '/api/v1';
+const rawEnvUrl = typeof import.meta !== 'undefined' && import.meta.env
+  ? (import.meta.env.VITE_API_GATEWAY_URL || import.meta.env.VITE_API_URL || '')
+  : '';
+
+let API_BASE_URL = '/api/v1';
+if (rawEnvUrl) {
+  const cleanUrl = rawEnvUrl.trim().replace(/\/+$/, '');
+  API_BASE_URL = cleanUrl.endsWith('/api/v1') ? cleanUrl : `${cleanUrl}/api/v1`;
+}
 
 /**
  * Custom Axios instance for the Notch API

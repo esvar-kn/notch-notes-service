@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState, useCallback } from 'react';
 import { io } from 'socket.io-client';
 
-const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 'http://localhost:4000';
+const SOCKET_URL = (import.meta.env.VITE_SOCKET_URL || import.meta.env.VITE_API_GATEWAY_URL || import.meta.env.VITE_API_URL || 'http://localhost:4000').replace(/\/api\/v1\/?$/, '');
 
 /**
  * Custom React Hook for Real-time Collaborative Editing (Block 1)
