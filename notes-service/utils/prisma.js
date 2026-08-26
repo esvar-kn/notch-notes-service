@@ -3,7 +3,11 @@ const { PrismaClient } = require('@prisma/client');
 const { PrismaPg } = require('@prisma/adapter-pg');
 const { Pool } = require('pg');
 
-const isLocalDb = config.DATABASE_URL.includes('localhost') || config.DATABASE_URL.includes('127.0.0.1');
+const isLocalDb = config.DATABASE_URL.includes('localhost') || 
+                  config.DATABASE_URL.includes('127.0.0.1') || 
+                  config.DATABASE_URL.includes('postgres') || 
+                  config.DATABASE_URL.includes('notch-db') || 
+                  config.DATABASE_URL.includes('sslmode=disable');
 
 const pool = new Pool({
     connectionString: config.DATABASE_URL,

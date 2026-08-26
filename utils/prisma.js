@@ -8,7 +8,11 @@ const { Pool } = require('pg');
 
 // Managed Postgres providers (Railway, Supabase, RDS, …) require TLS; a local
 // server does not. Detect localhost and skip SSL there.
-const isLocalDb = config.DATABASE_URL.includes('localhost') || config.DATABASE_URL.includes('127.0.0.1');
+const isLocalDb = config.DATABASE_URL.includes('localhost') || 
+                  config.DATABASE_URL.includes('127.0.0.1') || 
+                  config.DATABASE_URL.includes('postgres') || 
+                  config.DATABASE_URL.includes('notch-db') || 
+                  config.DATABASE_URL.includes('sslmode=disable');
 
 const pool = new Pool({
     connectionString: config.DATABASE_URL,

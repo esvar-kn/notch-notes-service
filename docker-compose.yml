@@ -45,7 +45,7 @@ services:
     environment:
       PORT: 4001
       DATABASE_URL: "postgresql://postgres:devpass@postgres:5432/notesdb"
-      JWT_SECRET: "NotesAppHashSecret"
+      JWT_SECRET: "NotesAppSuperSecretKey32CharsLongRequirement!"
       SALT_ROUNDS: 12
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4001/health"]
@@ -71,7 +71,7 @@ services:
       PORT: 4002
       DATABASE_URL: "postgresql://postgres:devpass@postgres:5432/notesdb"
       REDIS_URL: "redis://redis:6379"
-      JWT_SECRET: "NotesAppHashSecret"
+      JWT_SECRET: "NotesAppSuperSecretKey32CharsLongRequirement!"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4002/health"]
       interval: 15s

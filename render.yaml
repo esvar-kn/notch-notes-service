@@ -1,0 +1,108 @@
+# Render.com Infrastructure-as-Code Blueprint (render.yaml)
+# Deploy the Notch Multi-Service Architecture (API Gateway, Auth Service, Notes Service, Postgres, Redis, and React Frontend)
+
+services:
+  # ----------------------------------------------------
+  # 🚀 1. API Gateway Service (Port 4000)
+  # ----------------------------------------------------
+  - type: web
+    name: notch-gateway
+    env: docker
+    dockerfilePath: ./gateway/Dockerfile
+    dockerContext: ./gateway
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 4000
+      - key: AUTH_SERVICE_URL
+        fromService:
+          type: web
+          name: notch-auth-service
+          property: hostport
+          type: http
+      - key: NOTES_SERVICE_URL
+        fromService:
+          type: web
+          name: notch-notes-service
+          property: hostport
+          type: http
+
+  # ----------------------------------------------------
+  # 🔐 2. Auth Microservice (Port 4001)
+  # ----------------------------------------------------
+  - type: web
+    name: notch-auth-service
+    env: docker
+    dockerfilePath: ./auth-service/Dockerfile
+    dockerContext: ./auth-service
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 4001
+      - key: DATABASE_URL
+        fromDatabase:
+          name: notch-postgres
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: SALT_ROUNDS
+        value: "12"
+
+  # ----------------------------------------------------
+  # 📝 3. Notes Microservice (Port 4002)
+  # ----------------------------------------------------
+  - type: web
+    name: notch-notes-service
+    env: docker
+    dockerfilePath: ./notes-service/Dockerfile
+    dockerContext: ./notes-service
+    healthCheckPath: /health
+    envVars:
+      - key: PORT
+        value: 4002
+      - key: DATABASE_URL
+        fromDatabase:
+          name: notch-postgres
+          property: connectionString
+      - key: REDIS_URL
+        fromService:
+          type: redis
+          name: notch-redis
+          property: connectionString
+      - key: JWT_SECRET
+        fromService:
+          type: web
+          name: notch-auth-service
+          envVarKey: JWT_SECRET
+
+  # ----------------------------------------------------
+  # 📱 4. React 19 Frontend Application
+  # ----------------------------------------------------
+  - type: static
+    name: notch-frontend
+    buildCommand: cd notch-frontend && npm install && npm run build
+    staticPublishPath: ./notch-frontend/dist
+    routes:
+      - type: rewrite
+        source: /*
+        destination: /index.html
+    envVars:
+      - key: VITE_API_GATEWAY_URL
+        fromService:
+          type: web
+          name: notch-gateway
+          property: url
+
+# ----------------------------------------------------
+# 🐘 5. Managed PostgreSQL Database
+# ----------------------------------------------------
+databases:
+  - name: notch-postgres
+    databaseName: notesdb
+    user: postgres
+    plan: free
+
+# ----------------------------------------------------
+# ⚡ 6. Managed Redis Cache Store
+# ----------------------------------------------------
+# Note: Render Key-Value (Redis) setup
