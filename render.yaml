@@ -97,7 +97,7 @@ services:
         fromService:
           type: web
           name: notch-gateway
-          property: url
+          property: hostport
 
 # ----------------------------------------------------
 # 🐘 6. Managed PostgreSQL Database
@@ -105,4 +105,3 @@ services:
 databases:
   - name: notch-postgres
     databaseName: notesdb
-    user: postgres
